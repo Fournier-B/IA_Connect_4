@@ -1,0 +1,343 @@
+import tkinter as tk
+from tkinter import ttk
+import numpy as np
+import random as rnd
+from threading import Thread
+from queue import Queue
+
+
+disk_color = ['white', 'red', 'orange']
+disks = list()
+
+player_type = ['human']
+for i in range(42):
+    player_type.append('AI: alpha-beta level '+str(i+1))
+
+def alpha_beta_decision(board, turn, ai_level, queue, max_player):
+    # random move (to modify)
+    queue.put(board.get_possible_moves()[rnd.randint(0, len(board.get_possible_moves()) - 1)])
+
+
+
+
+
+class Board:
+    grid = np.array([[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
+                     [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]])
+
+
+    ''' not in the project skeleton
+    def get_children(self):
+        children = []
+        explore_order = [0,1,2,3,4,5,6,7]
+        for i in explore_order:
+            if (self.column_filled(i)):
+                continue
+        child = self.copy()
+        child.move(i)
+        children.append(child)
+        
+        return children '''
+ 
+    # not in the project skeleton
+    def eval_line(self,player,line):
+        count = 0
+        empty = 0
+        score = 0
+        adv = 0
+        for c in range(7) :
+                if self.grid[c][line] == player :
+                    count += 1
+                    if count == 4 :
+                        score += 100
+                    elif count == 3 and empty == 1 :
+                        score +=10    
+                    elif count == 2 and empty == 2 :
+                        score +=5
+                    
+                elif self.grid[c][line] == 0 :
+                    empty +=1
+                    if count == 3 and empty == 1 :
+                        score += 10 
+                    elif count == 2 and empty == 2 :
+                        score += 5   
+                    elif adv == 3 and empty == 1 :
+                        score -= 8
+                    
+                else :
+                    empty = 0
+                    count = 0 
+                    adv += 1
+                    if adv == 4 :
+                        score -=100
+                    elif adv == 3 and empty == 1 :
+                        score -= 8
+                    elif adv == 2 and empty == 2 :
+                        score -= 4
+                
+        return score
+    
+    def eval_column(self,player,column):
+        score = 0
+        adv = 0
+        count = 0
+        for l in range(6) :
+            if self.grid[column][l] == player :
+                count += 1
+                adv = 0
+            elif self.grid[column][l] == 0 :
+                if count == 4 :
+                    score += 100
+                elif count == 3 and l < 6 :
+                    score += 10
+                elif count == 2 and l < 5 :
+                    score += 5
+                    
+                elif adv == 4 :
+                    score -=100
+                elif adv == 3 and l < 6 :
+                    score -= 8
+                elif adv ==2 and l < 5 :
+                    score -= 4
+            else :
+                adv += 1
+                count = 0
+        return score
+    
+    def eval_diag_Left(self,player,line,column):
+        c = column
+        l = line
+        score = 0
+        while c > 0 and l > 0:
+            score += 1
+            
+            
+        return score
+
+    def eval_diag_Right(self,player,line,column):
+        score = 0
+        return score
+
+    def eval(self, player):
+        score = 0
+        
+        #line eval 
+        for l in range(6):
+            score += self.grid.eval_line(player,l)
+        #column eval
+        for c in range(3):
+            score+= self.grid.eval_column(player,c)
+        #Left diagonal eval
+        for l in range(3):
+            for c in range(6,3,-1):
+                score += self.grid.eval_diag_Left(player,l,c)
+        #Right diagonal eval       
+        for l in range(3):
+            for c in range(4):
+                score += self.grid.eval_diag_Right(player,l,c)      
+                
+        return 0
+    
+    def pick_MAX(self, player):
+        valid_locations = self.get_possible_moves
+        best_score = 0
+        best_col = self.get_possible_moves[0]
+        for col in valid_locations :
+            temp_grid = self.copy()
+            temp_grid.add_disk(col, player)
+            score = eval(temp_grid,player)
+            if score > best_score :
+                best_score = score
+                best_col = col
+                
+        return best_col
+    
+    def pick_MIN(self, player):
+        valid_locations = self.get_possible_moves
+        best_score = 100
+        best_col = self.get_possible_moves[0]
+        for col in valid_locations :
+            temp_grid = self.copy()
+            temp_grid.add_disk(col, player)
+            score = eval(temp_grid,player)
+            if score < best_score :
+                best_score = score
+                best_col = col
+                
+        return best_col
+    
+    def minmax(self,depth, maximizingPlayer):
+       # if depth =0 or 
+        
+        return 0
+        
+    def copy(self):
+        new_board = Board()
+        new_board.grid = np.array(self.grid, copy=True)
+        return new_board
+
+    def reinit(self):
+        self.grid.fill(0)
+        for i in range(7):
+            for j in range(6):
+                canvas1.itemconfig(disks[i][j], fill=disk_color[0])
+
+    def get_possible_moves(self):
+        possible_moves = list()
+        if self.grid[3][5] == 0:
+            possible_moves.append(3)
+        for shift_from_center in range(1, 4):
+            if self.grid[3 + shift_from_center][5] == 0:
+                possible_moves.append(3 + shift_from_center)
+            if self.grid[3 - shift_from_center][5] == 0:
+                possible_moves.append(3 - shift_from_center)
+        return possible_moves
+
+    def add_disk(self, column, player, update_display=True):
+        for j in range(6):
+            if self.grid[column][j] == 0:
+                break
+        self.grid[column][j] = player
+        if update_display:
+            canvas1.itemconfig(disks[column][j], fill=disk_color[player])
+
+    def column_filled(self, column):
+        return self.grid[column][5] != 0
+
+    def check_victory(self):
+        # Horizontal alignment check
+        for line in range(6):
+            for horizontal_shift in range(4):
+                if self.grid[horizontal_shift][line] == self.grid[horizontal_shift + 1][line] == self.grid[horizontal_shift + 2][line] == self.grid[horizontal_shift + 3][line] != 0:
+                    return True
+        # Vertical alignment check
+        for column in range(7):
+            for vertical_shift in range(3):
+                if self.grid[column][vertical_shift] == self.grid[column][vertical_shift + 1] == \
+                        self.grid[column][vertical_shift + 2] == self.grid[column][vertical_shift + 3] != 0:
+                    return True
+        # Diagonal alignment check
+        for horizontal_shift in range(4):
+            for vertical_shift in range(3):
+                if self.grid[horizontal_shift][vertical_shift] == self.grid[horizontal_shift + 1][vertical_shift + 1] ==\
+                        self.grid[horizontal_shift + 2][vertical_shift + 2] == self.grid[horizontal_shift + 3][vertical_shift + 3] != 0:
+                    return True
+                elif self.grid[horizontal_shift][5 - vertical_shift] == self.grid[horizontal_shift + 1][4 - vertical_shift] ==\
+                        self.grid[horizontal_shift + 2][3 - vertical_shift] == self.grid[horizontal_shift + 3][2 - vertical_shift] != 0:
+                    return True
+        return False
+
+
+class Connect4:
+
+    def __init__(self):
+        self.board = Board()
+        self.human_turn = False
+        self.turn = 1
+        self.players = (0, 0)
+        self.ai_move = Queue()
+
+    def current_player(self):
+        return 2 - (self.turn % 2)
+
+    def launch(self):
+        self.board.reinit()
+        self.turn = 0
+        information['fg'] = 'black'
+        information['text'] = "Turn " + str(self.turn) + " - Player " + str(
+            self.current_player()) + " is playing"
+        self.human_turn = False
+        self.players = (combobox_player1.current(), combobox_player2.current())
+        self.handle_turn()
+
+    def move(self, column):
+        if not self.board.column_filled(column):
+            self.board.add_disk(column, self.current_player())
+            self.handle_turn()
+
+    def click(self, event):
+        if self.human_turn:
+            column = event.x // row_width
+            self.move(column)
+
+    def ai_turn(self, ai_level):
+        Thread(target=alpha_beta_decision, args=(self.board, self.turn, ai_level, self.ai_move, self.current_player(),)).start()
+        self.ai_wait_for_move()
+
+    def ai_wait_for_move(self):
+        if not self.ai_move.empty():
+            self.move(self.ai_move.get())
+        else:
+            window.after(100, self.ai_wait_for_move)
+
+    def handle_turn(self):
+        self.human_turn = False
+        if self.board.check_victory():
+            information['fg'] = 'red'
+            information['text'] = "Player " + str(self.current_player()) + " wins !"
+            return
+        elif self.turn >= 42:
+            information['fg'] = 'red'
+            information['text'] = "This a draw !"
+            return
+        self.turn = self.turn + 1
+        information['text'] = "Turn " + str(self.turn) + " - Player " + str(
+            self.current_player()) + " is playing"
+        if self.players[self.current_player() - 1] != 0:
+            self.human_turn = False
+            self.ai_turn(self.players[self.current_player() - 1])
+        else:
+            self.human_turn = True
+
+
+game = Connect4()
+
+# Graphical settings
+width = 700
+row_width = width // 7
+row_height = row_width
+height = row_width * 6
+row_margin = row_height // 10
+
+window = tk.Tk()
+window.title("Connect 4")
+canvas1 = tk.Canvas(window, bg="blue", width=width, height=height)
+
+# Drawing the grid
+for i in range(7):
+    disks.append(list())
+    for j in range(5, -1, -1):
+        disks[i].append(canvas1.create_oval(row_margin + i * row_width, row_margin + j * row_height, (i + 1) * row_width - row_margin,
+                            (j + 1) * row_height - row_margin, fill='white'))
+
+
+canvas1.grid(row=0, column=0, columnspan=2)
+
+information = tk.Label(window, text="")
+information.grid(row=1, column=0, columnspan=2)
+
+label_player1 = tk.Label(window, text="Player 1: ")
+label_player1.grid(row=2, column=0)
+combobox_player1 = ttk.Combobox(window, state='readonly')
+combobox_player1.grid(row=2, column=1)
+
+label_player2 = tk.Label(window, text="Player 2: ")
+label_player2.grid(row=3, column=0)
+combobox_player2 = ttk.Combobox(window, state='readonly')
+combobox_player2.grid(row=3, column=1)
+
+combobox_player1['values'] = player_type
+combobox_player1.current(0)
+combobox_player2['values'] = player_type
+combobox_player2.current(6)
+
+button2 = tk.Button(window, text='New game', command=game.launch)
+button2.grid(row=4, column=0)
+
+button = tk.Button(window, text='Quit', command=window.destroy)
+button.grid(row=4, column=1)
+
+# Mouse handling
+canvas1.bind('<Button-1>', game.click)
+
+window.mainloop()
